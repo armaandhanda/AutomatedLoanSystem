@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PDF Upload & Financial Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-gradient-to-br from-blue-50 via-purple-100 to-pink-200 min-h-screen flex flex-col items-center py-12">
+
+  <!-- ✅ Logo -->
+  <div class="drop-shadow-lg mb-6">
+    <img src="images/download.png" alt="TransLytics AI Logo" class="w-[20rem] max-w-none h-auto"/>
+  </div>
+
+  <!-- ✅ Upload Box with Loan Details Inside -->
+  <div class="bg-white shadow-2xl border border-gray-200 rounded-2xl p-8 max-w-md w-full text-center">
+    <h1 class="text-2xl font-bold text-gray-800 mb-6">Upload and Process PDF</h1>
+    
+      <!-- ✅ Loan Input Section Inside Upload Box -->
+      <div class="w-full bg-gray-100 rounded-lg p-4 mb-4">
+        <h2 class="text-lg font-bold text-gray-800 text-center mb-2">Loan Details</h2>
+        <div class="flex items-center justify-center space-x-4">
+          <label for="loanCurrency" class="text-gray-700 font-semibold">Loan Amount:</label>
+          <select id="loanCurrency" class="border border-gray-300 rounded-lg px-4 py-2">
+            <option value="">Select</option>
+            <option value="INR">INR</option>
+            <option value="USD">USD</option>
+            <option value="GBP">GBP</option>
+            <option value="EUR">EUR</option>
+            <option value="AUD">AUD</option>
+          </select>
+          <input type="number" id="loanAmount" placeholder="Enter amount"
+            class="border border-gray-300 rounded-lg px-4 py-2 w-40 focus:ring focus:ring-green-500">
+        </div>
+      </div>
+      <input type="file" id="pdfInput" accept="application/pdf"
+      class="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer focus:ring focus:ring-green-500 mb-4"/>
+
+    <button id="processBtn"
+      class="w-full bg-green-500 text-white font-semibold py-3 px-4 rounded-lg cursor-not-allowed opacity-50"
+      disabled>Process PDF</button>
+
+    <p id="status" class="mt-4 text-sm font-medium text-gray-600">Select a file and enter loan details to proceed.</p>
+  </div>
+
+    <!-- ✅ User Summary Section (Ensuring it exists in HTML) -->
+<div id="userSummaryContainer" class="w-full max-w-5xl mt-12 bg-white shadow-lg rounded-lg p-6 hidden">
+  <h2 class="text-xl font-bold text-gray-800 text-center mb-4">User Summary</h2>
+  <table class="w-full border-collapse border border-gray-300">
+      <tbody id="userSummaryTable"></tbody>
+  </table>
+</div>
+
+    <!-- ✅ Loan Verdict -->
+    <div id="verdictContainer" class="w-full max-w-3xl mt-12 bg-white shadow-lg rounded-lg p-6 hidden">
+    <h2 class="text-2xl font-bold text-gray-800 text-center mb-4">Loan Verdict</h2>
+    <p id="verdictText" class="text-lg font-semibold text-gray-700 text-center"></p>
+  </div>
+  
+  
+     <!-- ✅ Financial Summary Table -->
+  <div id="financialSummaryContainer" class="w-full max-w-5xl mt-12 bg-white shadow-lg rounded-lg p-6 hidden">
+    <h2 class="text-xl font-bold text-gray-800 text-center mb-4">Financial Summary</h2>
+    <table class="w-full border-collapse border border-gray-300">
+      <tbody id="financialSummaryTable"></tbody>
+    </table>
+  </div>
+
+
+    
+<!-- 📊 Graphs Section (Equal Size & Centered Cumulative Savings) -->
+<div id="graphsContainer" class="w-full max-w-5xl mt-12 hidden flex flex-col items-center">
+  <div class="grid grid-cols-2 gap-8">
+    <!-- Net Credit -->
+    <div class="p-6 bg-white shadow-md rounded-lg h-[350px] w-[500px] flex flex-col justify-center items-center">
+      <h3 class="text-lg font-semibold text-gray-700 text-center mb-4">Net Credit</h3>
+      <canvas id="netCreditChart" class="w-full h-full"></canvas>
+    </div>
+    
+    <!-- Net Debit -->
+    <div class="p-6 bg-white shadow-md rounded-lg h-[350px] w-[500px] flex flex-col justify-center items-center">
+      <h3 class="text-lg font-semibold text-gray-700 text-center mb-4">Net Debit</h3>
+      <canvas id="netDebitChart" class="w-full h-full"></canvas>
+    </div>
+  </div>
+
+  <!-- Centered Cumulative Savings -->
+  <div class="p-6 bg-white shadow-md rounded-lg h-[350px] w-[500px] flex flex-col justify-center items-center mt-8">
+    <h3 class="text-lg font-semibold text-gray-700 text-center mb-4">Cumulative Savings</h3>
+    <canvas id="cumulativeSavingsChart" class="w-full h-full"></canvas>
+  </div>
+</div>
+
+<!-- ✅ Pie Chart Section (Half Size & Centered) -->
+<div id="pieChartContainer" class="max-w-5xl bg-white shadow-lg rounded-lg p-12 mt-12 hidden flex flex-col items-center">
+  <h2 class="text-xl font-semibold text-gray-800 text-center mb-6">Debit Distribution</h2>
+  <!-- Changed w-[900px] h-[900px] to w-[450px] h-[450px] -->
+  <div class="w-[450px] h-[450px] flex justify-center items-center">
+    <!-- Changed width="1400" height="1200" to width="700" height="600" -->
+    <canvas id="debitPieChart" width="700" height="600"></canvas>
+  </div>
+</div>
+
+
+
+
+
+  <!-- ✅ Existing Loans Table -->
+  <div id="loansContainer" class="w-full max-w-5xl mt-12 bg-white shadow-lg rounded-lg p-6 hidden">
+    <h2 class="text-xl font-bold text-gray-800 text-center mb-4">Existing Loans & Recurring Payments</h2>
+    <table class="w-full border-collapse border border-gray-300">
+      <thead class="bg-gray-200">
+        <tr id="loansHeader"></tr>
+      </thead>
+      <tbody id="loansBody"></tbody>
+    </table>
+  </div>
+
+
+
+
+  <script>
+    let uploadedFile = null;
+    let loanAmountInput = document.getElementById("loanAmount");
+    let loanCurrencySelect = document.getElementById("loanCurrency");
+    let pdfInput = document.getElementById("pdfInput");
+    let processBtn = document.getElementById("processBtn");
+
+    function validateForm() {
+      if (uploadedFile && loanAmountInput.value.trim() !== "" && loanCurrencySelect.value !== "") {
+        processBtn.classList.remove("cursor-not-allowed", "opacity-50");
+        processBtn.disabled = false;
+      } else {
+        processBtn.classList.add("cursor-not-allowed", "opacity-50");
+        processBtn.disabled = true;
+      }
+    }
+
+    pdfInput.addEventListener("change", () => {
+      if (pdfInput.files.length > 0) {
+        uploadedFile = pdfInput.files[0];
+      }
+      validateForm();
+    });
+
+    loanAmountInput.addEventListener("input", validateForm);
+    loanCurrencySelect.addEventListener("change", validateForm);
+
+    document.getElementById("processBtn").addEventListener("click", async () => {
+    if (!uploadedFile) return;
+
+    const status = document.getElementById("status");
+    status.innerText = `Uploading & Processing "${uploadedFile.name}"...`;
+
+    const formData = new FormData();
+    formData.append("file", uploadedFile);
+    formData.append("loan_currency", loanCurrencySelect.value);
+    formData.append("loan_amount", loanAmountInput.value);
+
+    try {
+        const response = await fetch("http://127.0.0.1:5001/upload", { method: "POST", body: formData });
+        const result = await response.json();
+
+        console.log("API Response:", result); // Debugging API response
+
+        if (result.verdict) {
+            status.innerText = "PDF Processed Successfully!";
+            updateUI(result); // Call function to update UI elements
+        } else {
+            status.innerText = "Processing failed.";
+        }
+    } catch (error) {
+        status.innerText = "Error processing file.";
+        console.error(error);
+    }
+});
+
+function updateUI(data) {
+    console.log("Updating UI with data:", data);
+
+    // ✅ Show User Summary FIRST
+    if (data.user_summary) {
+        renderUserSummary(data.user_summary);
+        document.getElementById("userSummaryContainer").classList.remove("hidden");
+    }
+
+    // ✅ Show Financial Summary
+    if (data.financial_summary) {
+        renderTable("financialSummaryTable", data.financial_summary);
+        document.getElementById("financialSummaryContainer").classList.remove("hidden");
+    }
+
+    // ✅ Show Loan Verdict
+    if (data.verdict) {
+        renderVerdict(data.verdict);
+    }
+
+    // ✅ Show Graphs
+    if (data.monthly_summary) {
+        renderGraphs(data.monthly_summary);
+        document.getElementById("graphsContainer").classList.remove("hidden");
+    }
+
+    // ✅ Show Debit Distribution
+    if (data.debit_distribution) {
+        renderPieChart("debitPieChart", data.debit_distribution, "total_debit");
+        document.getElementById("pieChartContainer").classList.remove("hidden");
+    }
+
+    // ✅ Show Existing Loans
+    if (data.existing_loans) {
+        renderLoans(data.existing_loans);
+    }
+}
+
+
+    function renderUserSummary(data) {
+    const tableBody = document.getElementById("userSummaryTable");
+
+    // ✅ Check if element exists before modifying it
+    if (!tableBody) {
+        console.error("Error: Element 'userSummaryTable' not found in the DOM.");
+        return;
+    }
+
+    tableBody.innerHTML = ""; // Clear previous data
+
+    Object.entries(data).forEach(([key, value]) => {
+        tableBody.innerHTML += `
+            <tr>
+                <td class="border border-gray-300 px-4 py-2 font-semibold">${key}</td>
+                <td class="border border-gray-300 px-4 py-2">${value}</td>
+            </tr>
+        `;
+    });
+
+    // ✅ Ensure container is visible
+    document.getElementById("userSummaryContainer").classList.remove("hidden");
+}
+
+function renderVerdict(verdict) {
+    const verdictContainer = document.getElementById("verdictContainer");
+    const verdictText = document.getElementById("verdictText");
+
+    // Extract Decision and Explanation separately
+    const decisionMatch = verdict.match(/Decision:\s*(Approved|Rejected)/);
+    const explanationMatch = verdict.match(/Explanation:\s*(.*)/s);
+
+    const decision = decisionMatch ? decisionMatch[1] : "Pending";
+    const explanation = explanationMatch ? explanationMatch[1] : "No further details available.";
+
+    // Define badge colors based on decision
+    const decisionColor = decision === "Approved" ? "bg-green-500" : "bg-red-500";
+
+    // Format the verdict UI
+    const formattedVerdict = `
+        <div class="text-gray-800 px-6 py-4">
+            <p class="text-lg font-semibold text-center">
+                The decision on the loan application is:
+            </p>
+
+            <!-- ✅ Stylish Badge for Decision -->
+            <div class="flex justify-center my-4">
+                <span class="text-white text-lg font-bold px-5 py-2 rounded-full ${decisionColor} shadow-md">
+                    ${decision}
+                </span>
+            </div>
+
+            <!-- ✅ "Why?" section -->
+            <div class="bg-gray-100 p-6 rounded-lg shadow-md border-l-4 border-blue-500 mt-4">
+                <p class="text-gray-700 font-bold text-lg text-center mb-2">Why?</p>
+                <p class="text-gray-700 leading-relaxed">
+                    ${explanation}
+                </p>
+            </div>
+        </div>
+    `;
+
+    verdictText.innerHTML = formattedVerdict; // Apply formatted content
+    verdictContainer.classList.remove("hidden"); // Show the verdict
+}
+
+
+
+
+    function renderTable(tableId, data) {
+        const tableBody = document.getElementById(tableId);
+        tableBody.innerHTML = "";
+        Object.entries(data).forEach(([key, value]) => {
+            tableBody.innerHTML += `<tr>
+                <td class="border border-gray-300 px-4 py-2 font-semibold">${key}</td>
+                <td class="border border-gray-300 px-4 py-2">${value}</td>
+            </tr>`;
+        });
+    }
+
+    let chartInstances = {}; 
+    function renderGraphs(data) {
+        const labels = data.map(item => item.Month);
+        const netCredit = data.map(item => parseFloat(item.Net_Credit) || 0);
+        const netDebit = data.map(item => parseFloat(item.Net_Debit) || 0);
+        const cumulativeSavings = data.map(item => parseFloat(item.Cumulative_Savings) || 0);
+
+        function createChart(canvasId, dataset, color) {
+            const ctx = document.getElementById(canvasId).getContext("2d");
+            
+            if (chartInstances[canvasId]) {
+                chartInstances[canvasId].destroy();
+            }
+
+            chartInstances[canvasId] = new Chart(ctx, {
+                type: "line",
+                data: { labels, datasets: [{ data: dataset, borderColor: color, fill: false }] },
+                options: { plugins: { legend: { display: false } } }
+            });
+        }
+
+        createChart("netCreditChart", netCredit, "#36A2EB");
+        createChart("netDebitChart", netDebit, "#FF6384");
+        createChart("cumulativeSavingsChart", cumulativeSavings, "#4BC0C0");
+    }
+
+    function renderPieChart(canvasId, data, valueKey) {
+        const ctx = document.getElementById(canvasId).getContext("2d");
+
+        if (chartInstances[canvasId]) {
+            chartInstances[canvasId].destroy();
+        }
+
+        const labels = data.map(item => item.Category);
+        const values = data.map(item => parseFloat(item[valueKey]) || 0);
+
+        chartInstances[canvasId] = new Chart(ctx, {
+            type: "pie",
+            data: { labels, datasets: [{ data: values }] },
+            options: { plugins: { legend: { display: true, position: "top" } } }
+        });
+    }
+
+    function renderLoans(loans) {
+  const loansHeader = document.getElementById("loansHeader");
+  const loansBody = document.getElementById("loansBody");
+
+  // Adjust the table headers
+  loansHeader.innerHTML = `
+    <th class="border border-gray-300 px-4 py-2 bg-gray-100 font-bold">Description</th>
+    <th class="border border-gray-300 px-4 py-2 bg-gray-100 font-bold">Type</th>
+    <th class="border border-gray-300 px-4 py-2 bg-gray-100 font-bold">Amount</th>
+  `;
+
+  // Render each row based on the actual keys in the data
+  loansBody.innerHTML = loans
+    .map(
+      (loan) => `
+        <tr>
+          <td class="border border-gray-300 px-4 py-2">${loan.Description}</td>
+          <td class="border border-gray-300 px-4 py-2">${loan.Type}</td>
+          <td class="border border-gray-300 px-4 py-2">${loan.Amount}</td>
+        </tr>
+      `
+    )
+    .join("");
+
+  // Make sure the container is visible
+  document.getElementById("loansContainer").classList.remove("hidden");
+}
+
+    function destroyAllContent() {
+        document.getElementById("graphsContainer").classList.add("hidden");
+        document.getElementById("userSummaryContainer").classList.add("hidden");
+        document.getElementById("financialSummaryContainer").classList.add("hidden");
+
+        Object.values(chartInstances).forEach(chart => chart.destroy());
+        chartInstances = {};
+
+        document.getElementById("userSummaryHeader").innerHTML = "";
+        document.getElementById("userSummaryRow").innerHTML = "";
+        document.getElementById("financialSummaryTable").innerHTML = "";
+    }
+  </script>
+</body>
+</html>
